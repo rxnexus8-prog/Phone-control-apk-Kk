@@ -147,10 +147,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Run shell command via Shizuku (returns output string)
+    // Shizuku.newProcess() is private in api 13.x -> call via reflection
     fun runShizukuCommand(cmd: String): String {
         return try {
             if (!isShizukuAvailable()) return "Shizuku not available"
-            val process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
+            val method = Shizuku::class.java.getDeclaredMethod(
+                "newProcess", Array<String>::class.java, Array<String>::class.java, String::class.java
+            )
+            method.isAccessible = true
+            val process = method.invoke(
+                null, arrayOf("sh", "-c", cmd), null, null
+            ) as rikka.shizuku.ShizukuRemoteProcess
             val output = process.inputStream.bufferedReader().readText()
             process.waitFor()
             output.trim()
